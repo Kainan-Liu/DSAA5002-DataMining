@@ -2,7 +2,7 @@
 This is the DSAA5002 final project--- Data Mining and Knowledge Discovery in Data Science
 
 # DSAA 5002 - Data Mining and Knowledge Discovery in Data Science
-![social-data-mining](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/5af1238c-beea-4373-9953-f8ebf84610db)
+![image](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/939fc4f0-ca33-49e0-a52d-05e62acb242d)
 
 **This project consists of two tasks**
 
