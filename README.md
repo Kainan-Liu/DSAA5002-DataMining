@@ -2,13 +2,11 @@
 This is the DSAA5002 final project--- Data Mining and Knowledge Discovery in Data Science
 
 # DSAA 5002 - Data Mining and Knowledge Discovery in Data Science
-
 ![social-data-mining](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/5af1238c-beea-4373-9953-f8ebf84610db)
 
 **This project consists of two tasks**
 
 ## Task 1 Data Preprocessing and Analysis
-
 **Background:** Assuming you are a sentiment analyst at a securities firm, your task is to assess the impact of each news article on the A-share listed companies explicitly mentioned. For instance, on October 14, 2022, the China Securities Journal(中国证券报) reported the following:
 
 ![image-20231109134533359](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/361c6e5e-4942-4835-b248-e8cf3299bf70)
