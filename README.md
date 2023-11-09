@@ -1,7 +1,6 @@
 # DSAA5002-DataMining
 This is the DSAA5002 final project--- Data Mining and Knowledge Discovery in Data Science
 
-# DSAA 5002 - Data Mining and Knowledge Discovery in Data Science
 ![image](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/939fc4f0-ca33-49e0-a52d-05e62acb242d)
 
 **This project consists of two tasks**
