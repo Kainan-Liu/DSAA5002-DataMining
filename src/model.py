@@ -1,14 +1,15 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
 import pandas as pd
 import config
 import numpy as np
+from utils import seed_everything
 from transformers import BertTokenizer, BertForSequenceClassification
-from data import ProcessedData
+from data import ProcessedData, retrainData
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from sklearn.linear_model import LogisticRegression
 
 class BertWrapper(nn.Module):
     '''
@@ -123,15 +124,91 @@ class BertWrapper(nn.Module):
         return sure_row_indices, unsure_row_indices
     
 
-class LogisticRegressor:
-    def __init__(self) -> None:
-        self.model = LogisticRegression(random_state=config.RANDOM_STATE)
+class LogisticRegressor(nn.Module):
+    def __init__(self, num_labels: int = 1, model_name = "../checkpoints") -> None:
+        super().__init__()
+        self.num_labels = num_labels
+        self.model = nn.Sequential(
+            nn.Embedding(num_embeddings=21128, embedding_dim=768),
+            nn.Linear(in_features=768, out_features=256),
+            nn.BatchNorm1d(num_features=256),
+            nn.ReLU(),
+            nn.Linear(in_features=256, out_features=16),
+            nn.BatchNorm1d(num_features=16),
+            nn.ReLU(),
+            nn.Linear(in_features=16, out_features=num_labels),
+            nn.Sigmoid()
+        )
+        self.tokenizer = BertTokenizer.from_pretrained(model_name)
 
-    def fit(self, X: torch.Tensor, y: torch.Tensor):
-        train_data = X.cpu().detach().numpy()
-        train_label = y.cpu().detach().numpy()
-        self.model.fit(X=train_data, y=train_label)
+    def _collate_fn(self, batch):
+        texts, labels = [], []
+        for item in batch:
+            texts.append(item[0])
+            labels.append(item[0])
+        inputs = self.tokenizer(texts, max_length=64, padding="max_length", truncation=True, return_tensors="pt")
+        return inputs, labels
 
-    def predict(self, test: torch.Tensor):
-        test_data = test.cpu().detach().numpy()
-        return self.model.predict(X=test)
+    def forward(self, x):
+        return self.model(x)
+    
+    def train(self, dataframe: str, epochs: int, batch_size: int):
+        print("====>Begin Training!")
+        # initialization
+        self.model.to(device=config.DEVICE)
+        dataset = retrainData(dataframe=dataframe)
+        dataloader = DataLoader(dataset=dataset,
+                                batch_size=batch_size,
+                                shuffle=True,
+                                num_workers=4,
+                                collate_fn=self._collate_fn)
+        optimizer = optim.SGD(self.model.parameters(), lr=1e-3, momentum=0.1)
+        criterion = nn.BCELoss()
+
+        for epoch in range(epochs):
+            loop = tqdm(enumerate(dataloader), leave=False, total=len(dataloader))
+            for idx, inputs, label in loop:
+            # 1. data
+                inputs = inputs.to(device=config.DEVICE)
+                label = label.to(device=config.DEVICE)
+                data = inputs.input_ids
+
+            for layer in self.model.modules():
+                if isinstance(layer, nn.Linear):
+                    nn.init.kaiming_normal_(layer.weight)
+                    if layer.bias is not None:
+                        nn.init.constant_(layer.bias, 0)
+
+            seed_everything(42)
+
+            loss_all = []
+            # 3.1 forward
+            output = self.model(data)
+            loss = criterion(output, label)
+
+            # 3.2 backward
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            #scheduler.step()
+
+            # 3.3 early stopping
+            loss_all.append(loss.item())
+        print("====>Stop Training")
+
+    def predict(self, test_dataframe: pd.DataFrame, batch_size = 64):
+        self.model.eval()
+        dataset = retrainData(dataframe=test_dataframe)
+        dataloader = DataLoader(dataset=dataset,
+                                batch_size=batch_size,
+                                shuffle=False,
+                                num_workers=4,
+                                collate_fn=self._collate_fn)
+        labels = []
+        with torch.no_grad():
+            for idx, data, _ in enumerate(dataloader):
+                output = self.model(data)
+                label = (output > 0.5).long()
+                labels.append(output.items())
+            
+        return labels
