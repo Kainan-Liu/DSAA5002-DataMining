@@ -89,11 +89,13 @@ class BertWrapper(nn.Module):
         self.model.eval()
         
         loop = tqdm(enumerate(dataloader), leave=False, total=len(dataloader))
-        for idx, inputs in loop:
-            output = self.model(**inputs)[0]
-            output = output if neutral else output[:, [0, 2]]
+        with torch.no_grad():
+            for idx, inputs in loop:
+                inputs = inputs.to(device = config.DEVICE)
+                output = self.model(**inputs)[0]
+                output = output if neutral else output[:, [0, 2]]
 
-            outputs = torch.concat((outputs, output), dim=0)
+                outputs = torch.concat((outputs, output), dim=0)
 
         return outputs.detach()
     
