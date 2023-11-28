@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import operator
 from tqdm import tqdm
-from model import BertWrapper
+from torch.utils.data import Dataset
 
 
 class AShareData:
@@ -12,11 +12,12 @@ class AShareData:
         self.data_dir = data_dir
 
         if os.path.exists(data_dir):
-            self.A_share_data = json.load(open(file=self.data_dir, mode="r"))
+            self.A_share_data = json.load(open(file=self.data_dir, mode="r", encoding="utf-8"))
             self.A_share_df = pd.read_json(self.data_dir)
         else:
             raise FileNotFoundError(f"{self.data_dir} not exists")
 
+    @property
     def getNameList(self):
         '''
         get dictionary of Each A-share company's short name  
@@ -30,11 +31,13 @@ class AShareData:
         other_features = ["location", "time"]
         self._Info_df = self.A_share_df.drop(other_features)
 
+    @property
     def getInfoDF(self):
         if type(self._Info_df):
             return self._Info_df
         else:
             raise ValueError("Info_df not exists, please run setInfoDF first")
+        
 
 
 class NewsData:
@@ -60,32 +63,67 @@ class NewsData:
         '''
          A brute force search
         '''
-        grid_search_matrix = np.ones((len(self.texts), len(name_list)), dtype=bool)
-        for i, text in enumerate(self.texts):
-            loop = tqdm(enumerate(name_list), leave=False, total=len(self.texts))
-            for j, name in loop:
-                grid_search_matrix[i, j] = operator.contains(text, name)
+        self.grid_search_matrix = np.ones((len(self.texts), len(name_list)), dtype=bool)
+        for i, text in tqdm(enumerate(self.texts), leave=False, total=len(self.texts)):
+            for j, name in enumerate(name_list):
+                self.grid_search_matrix[i, j] = operator.contains(text, name)
         
-        row_indices = np.where(np.any(grid_search_matrix, axis=1))[0] # get the remain row indices
-        other_row_indices = np.where(~np.any(grid_search_matrix, axis=1))[0]
+        row_indices, column_indices = np.where(self.grid_search_matrix) # get the remain row indices and column indices
+        self.row_indices = row_indices
+        self.column_indices = column_indices
+        other_row_indices = np.where(~np.any(self.grid_search_matrix, axis=1))[0]
         clean_data = self.data.iloc[row_indices, :]
         noise_data = self.data.iloc[other_row_indices, :]
         return clean_data, noise_data
     
+    def Explicit_Company_list(self, name_list: list):
+        name_dict = dict(zip(range(len(name_list)), name_list))
+        indices = {}
+        for key, value in zip(self.row_indices, self.column_indices):
+            indices.setdefault(key, []).append(value)
+        
+        company_dict = {}
+        for key, value in indices.items():
+            company_dict[key] = [name_dict[k] for k in value]
+        
+        self.data["Explicit_Company"] = pd.Series(company_dict)
+        
+        return company_dict
 
-class Cleaner:
-    def __init__(self, noise_df: pd.DataFrame) -> None:
-        self.noise_data = noise_df
 
-    def getEmbedding(self, text: list = None, model_name: str = "bert-base-chinese"):
-        '''
-        :text: list of text to be processed
-        :params: model_name = "bert-base-chinese", pretrained model available on huggingface Hub https://huggingface.co/bert-base-chinese
-        '''
-        if text is None:
-            text = list(self.noise_data["text"].values)
+class ProcessedData(Dataset):
+    def __init__(self, *, dataframe = None, file_path: str = None):
+        super().__init__()
+        self.file_path = file_path
+
+        if file_path is not None:
+            if os.path.exists(file_path):
+                self.data = pd.read_csv(file_path)
+            else:
+                raise FileNotFoundError("File Not exists! Please process first")
         else:
-            assert isinstance(text, list)
-        bert = BertWrapper(model_name=model_name)
-        hidden_state = bert(text)
-        return hidden_state
+            if dataframe is not None:
+                self.data = dataframe
+            else:
+                raise NotImplementedError("please assign file_path or dataframe first")
+        
+    @property
+    def getNewsID(self):
+        return self.data.loc[:, "NewsID"]
+
+    @property
+    def getNewsContent(self):
+        return self.data.loc[:, "NewsContent"]
+
+    @property
+    def getExplicit_Company(self):
+        return self.data.loc[:, "Explicit_Company"]
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, index):
+        text = self.data.iloc[index, -1] # -1: text consists of newscontent and title, which insert in the last column
+        return text
+
+
