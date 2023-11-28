@@ -126,4 +126,19 @@ class ProcessedData(Dataset):
         text = self.data.iloc[index, -1] # -1: text consists of newscontent and title, which insert in the last column
         return text
 
+class retrainData(Dataset):
+    def __init__(self, *, dataframe = None):
+        super().__init__()
+        if dataframe is not None:
+            self.data = dataframe
+        else:
+            raise NotImplementedError("please assign dataframe first")
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, index):
+        text = self.data.loc[index, "NewsContent"]
+        label = self.data.loc[index, "label"]
+        return text, label
 
