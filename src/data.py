@@ -46,6 +46,7 @@ class NewsData:
 
         if os.path.exists(data_dir):
             self.data = pd.read_excel(data_dir)
+            self.data.dropna(axis=0, how='any', inplace=True)
             self.text()
         else:
             raise FileNotFoundError(f"{self.data_dir} not exists")
@@ -71,8 +72,9 @@ class NewsData:
         row_indices, column_indices = np.where(self.grid_search_matrix) # get the remain row indices and column indices
         self.row_indices = row_indices
         self.column_indices = column_indices
+        clean_row_indices = np.where(np.any(self.grid_search_matrix, axis=1))[0]
         other_row_indices = np.where(~np.any(self.grid_search_matrix, axis=1))[0]
-        clean_data = self.data.iloc[row_indices, :]
+        clean_data = self.data.iloc[clean_row_indices, :]
         noise_data = self.data.iloc[other_row_indices, :]
         return clean_data, noise_data
     
@@ -85,8 +87,6 @@ class NewsData:
         company_dict = {}
         for key, value in indices.items():
             company_dict[key] = [name_dict[k] for k in value]
-        
-        self.data["Explicit_Company"] = pd.Series(company_dict)
         
         return company_dict
 
@@ -117,6 +117,7 @@ class ProcessedData(Dataset):
 
     @property
     def getExplicit_Company(self):
+        self.data["Explicit_Company"] = pd.read_csv("../Data/name.csv")
         return self.data.loc[:, "Explicit_Company"]
 
     def __len__(self):
@@ -141,4 +142,3 @@ class retrainData(Dataset):
         text = self.data.loc[index, "NewsContent"]
         label = self.data.loc[index, "label"]
         return text, label
-
