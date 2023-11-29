@@ -27,7 +27,7 @@ This news explicitly mentions three companies: 贵州茅台(600519.SH), 今世�
 #### Solution
 Use Chinese-Bert based model pretrained on Chinese Financial News
 
-![Model Link](https://huggingface.co/hw2942/bert-base-chinese-finetuning-financial-news-sentiment-v2)
+https://huggingface.co/hw2942/bert-base-chinese-finetuning-financial-news-sentiment-v2
 
 ![image-20231109135613887](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/33703a42-c36c-4bba-97df-9c67f5e146dd)
 
