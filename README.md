@@ -18,10 +18,18 @@ This news explicitly mentions three companies: 贵州茅台(600519.SH), 今世�
 
 **Description**: This is an open-ended question. Given the input, we consider any news that does not mention any of the China A-share listed companies to be noise. Task is to remove rows in the data table News.xlsx that do not mention any of the China A-share listed companies(as provided in A_share_list.json).
 
-### SubTask2: Data Analysis - Text Knowledge Mining
+### SubTask2: Data Analysis - Sentiment Analysis
 
 **Input**: The news data was cleaned through Question 1
 
 **Description**: Building on Question 1, we assume you have obtained a clean dataset where each news mentions at least one A-share listed company. In this question, your objective is to determine the sentiment polarity of each news text. This task can be treated as a binary classification problem, with Class 0 indicating "negative" and Class 1 indicating "positive". You can refer to the submission_excel_sample/sample_Task1.xlsx file for more information
 
+#### Solution
+Use Chinese-Bert based model pretrained on Chinese Financial News
+
+![Model Link](https://huggingface.co/hw2942/bert-base-chinese-finetuning-financial-news-sentiment-v2)
+
 ![image-20231109135613887](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/33703a42-c36c-4bba-97df-9c67f5e146dd)
+
+
+
