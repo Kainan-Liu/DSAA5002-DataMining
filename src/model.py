@@ -62,31 +62,31 @@ class BertWrapper(nn.Module):
             (classifier): Linear(in_features=768, out_features=3, bias=True)
         )
     '''
-    def __init__(self, model_name = "hw2942/bert-base-chinese-finetuning-financial-news-sentiment-v2"):
+    def __init__(self, model_name = "../checkpoints"):
         super().__init__()
         self.model_name = model_name
         self.tokenizer = BertTokenizer.from_pretrained(model_name)
         self.model = BertForSequenceClassification.from_pretrained(model_name)
 
     def _collate_fn(self, batch):
-        inputs = self.tokenizer(batch, max_length=64, padding="max_length", truncation=True, return_tensors="pt") # tokenizer返回的是字典
-        inputs = inputs.to(device = config.DEVICE)
+        inputs = self.tokenizer(batch, max_length=64, padding="max_length", truncation=True, return_tensors="pt")
         return inputs
 
     def predict(self, batch_size: int, *, dataPath: str = None, dataset: pd.DataFrame = None, neutral = False):
         print("Begin Training!")
-        assert dataPath or dataset, "One of (dataPath or dataset) should not None"
+        assert dataPath or len(dataset)>0, "One of (dataPath or dataset) should not be None"
         if dataPath is not None:
             dataset = ProcessedData(file_path=dataPath)
         else:
             dataset = ProcessedData(dataframe=dataset)
-        
+        self.dataset = dataset
         dataloader = DataLoader(dataset=dataset,
                                 batch_size=16,
                                 shuffle=False,
                                 num_workers=4,
                                 collate_fn=self._collate_fn)
-        outputs = torch.empty(size = (0, 3) if neutral else (0, 2))
+        outputs = torch.empty(size = (0, 3) if neutral else (0, 2), device=config.DEVICE)
+        self.model.to(device = config.DEVICE)
         self.model.eval()
         
         loop = tqdm(enumerate(dataloader), leave=False, total=len(dataloader))
@@ -120,7 +120,9 @@ class BertWrapper(nn.Module):
 
         logits = F.softmax(outputs, dim=1)
         unsure_row_indices = torch.where(torch.abs(logits[:, 0] - logits[:, 1]) < threshold)[0]
-        sure_row_indices = torch.where(~torch.abs(logits[:, 0] - logits[:, 1]) < threshold)[0]
+        sure_row_indices = torch.where(~(torch.abs(logits[:, 0] - logits[:, 1]) < threshold))[0]
+        sure_row_indices = sure_row_indices.cpu().detach().numpy()
+        unsure_row_indices = unsure_row_indices.cpu().detach().numpy()
         return sure_row_indices, unsure_row_indices
     
 
@@ -131,28 +133,31 @@ class LogisticRegressor(nn.Module):
         self.model = nn.Sequential(
             nn.Embedding(num_embeddings=21128, embedding_dim=768),
             nn.Linear(in_features=768, out_features=256),
-            nn.BatchNorm1d(num_features=256),
+            nn.LayerNorm(256),
             nn.ReLU(),
             nn.Linear(in_features=256, out_features=16),
-            nn.BatchNorm1d(num_features=16),
+            nn.LayerNorm(16),
             nn.ReLU(),
-            nn.Linear(in_features=16, out_features=num_labels),
+            nn.Linear(in_features=16, out_features=1),
             nn.Sigmoid()
         )
         self.tokenizer = BertTokenizer.from_pretrained(model_name)
+        if self.tokenizer.pad_token is None:
+            self.tokenizer.add_special_tokens({'pad_token': '[PAD]'})
 
     def _collate_fn(self, batch):
         texts, labels = [], []
         for item in batch:
-            texts.append(item[0])
-            labels.append(item[0])
+            texts.append(self.tokenizer.pad_token + item[0])
+            labels.append(item[1])
         inputs = self.tokenizer(texts, max_length=64, padding="max_length", truncation=True, return_tensors="pt")
+        labels = torch.tensor(labels, dtype=torch.float32)
         return inputs, labels
 
     def forward(self, x):
         return self.model(x)
     
-    def train(self, dataframe: str, epochs: int, batch_size: int):
+    def train(self, dataframe: pd.DataFrame, epochs: int, batch_size: int):
         print("====>Begin Training!")
         # initialization
         self.model.to(device=config.DEVICE)
@@ -161,13 +166,14 @@ class LogisticRegressor(nn.Module):
                                 batch_size=batch_size,
                                 shuffle=True,
                                 num_workers=4,
-                                collate_fn=self._collate_fn)
+                                collate_fn=self._collate_fn,
+                                drop_last=True)
         optimizer = optim.SGD(self.model.parameters(), lr=1e-3, momentum=0.1)
         criterion = nn.BCELoss()
 
         for epoch in range(epochs):
-            loop = tqdm(enumerate(dataloader), leave=False, total=len(dataloader))
-            for idx, inputs, label in loop:
+            loop = tqdm(dataloader, leave=False)
+            for inputs, label in loop:
             # 1. data
                 inputs = inputs.to(device=config.DEVICE)
                 label = label.to(device=config.DEVICE)
@@ -183,7 +189,7 @@ class LogisticRegressor(nn.Module):
 
             loss_all = []
             # 3.1 forward
-            output = self.model(data)
+            output = torch.mean(self.model(data), dim=1).flatten()
             loss = criterion(output, label)
 
             # 3.2 backward
@@ -192,7 +198,6 @@ class LogisticRegressor(nn.Module):
             optimizer.step()
             #scheduler.step()
 
-            # 3.3 early stopping
             loss_all.append(loss.item())
         print("====>Stop Training")
 
@@ -203,12 +208,16 @@ class LogisticRegressor(nn.Module):
                                 batch_size=batch_size,
                                 shuffle=False,
                                 num_workers=4,
-                                collate_fn=self._collate_fn)
+                                collate_fn=self._collate_fn,
+                                drop_last=False)
         labels = []
         with torch.no_grad():
-            for idx, data, _ in enumerate(dataloader):
-                output = self.model(data)
-                label = (output > 0.5).long()
-                labels.append(output.items())
+            for inputs, _ in dataloader:
+                inputs = inputs.to(device=config.DEVICE)
+                data = inputs.input_ids
+                output = torch.mean(self.model(data), dim=1).flatten()
+                label = torch.where(output > 0.5, 1, 0)
+                label_list = label.cpu().detach().tolist()
+                labels += label_list
             
         return labels
