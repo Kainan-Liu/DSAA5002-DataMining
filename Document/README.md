@@ -1,6 +1,6 @@
 # DSAA 5002 - Data Mining and Knowledge Discovery in Data Science
 
-<img src="https://www.netsuite.com/portal/assets/img/business-articles/data-warehouse/social-data-mining.jpg?v2" alt="What Is Data Mining? How It Works, Techniques & Examples | NetSuite" style="zoom:67%;" />
+<img src="C:\Users\lenovo\Desktop\HKUSTGZ-PG\Course-project\DSAA-5002\Data-mining-Project\Document\social-data-mining.jpg" alt="What Is Data Mining? How It Works, Techniques & Examples | NetSuite" style="zoom:67%;" />
 
 **This project consists of two tasks**
 
@@ -8,7 +8,7 @@
 
 **Background:** Assuming you are a sentiment analyst at a securities firm, your task is to assess the impact of each news article on the A-share listed companies explicitly mentioned. For instance, on October 14, 2022, the China Securities Journal(中国证券报) reported the following:
 
-![image-20231109134533359](C:\Users\lenovo\AppData\Roaming\Typora\typora-user-images\image-20231109134533359.png)
+![image-20231109134533359](C:\Users\lenovo\Desktop\HKUSTGZ-PG\Course-project\DSAA-5002\Data-mining-Project\Document\image-20231109134533359.png)
 
 This news explicitly mentions three companies: 贵州茅台(600519.SH), 今世缘(603369.SH), and 水井坊(600779.SH), and the impact appears to be positive. "Positive" indicates that this news appears to positively affect the company's stock price
 
@@ -24,4 +24,4 @@ This news explicitly mentions three companies: 贵州茅台(600519.SH), 今世�
 
 **Description**: Building on Question 1, we assume you have obtained a clean dataset where each news mentions at least one A-share listed company. In this question, your objective is to determine the sentiment polarity of each news text. This task can be treated as a binary classification problem, with Class 0 indicating "negative" and Class 1 indicating "positive". You can refer to the submission_excel_sample/sample_Task1.xlsx file for more information
 
-![image-20231109135613887](C:\Users\lenovo\AppData\Roaming\Typora\typora-user-images\image-20231109135613887.png)
+![image-20231109135613887](C:\Users\lenovo\Desktop\HKUSTGZ-PG\Course-project\DSAA-5002\Data-mining-Project\Document\image-20231109135613887.png)
