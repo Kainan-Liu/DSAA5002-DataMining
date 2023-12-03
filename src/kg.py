@@ -1,4 +1,5 @@
-from py2neo import Graph, Relationship, Node, Subgraph, NodeMatcher
+from py2neo import Graph, Relationship, Node, Subgraph, NodeMatcher, RelationshipMatcher
+from tqdm import tqdm
 import os
 import pandas as pd
 
@@ -13,6 +14,7 @@ class Company_KG:
         self.graph.delete_all()
 
         self.node_matcher = NodeMatcher(graph=self.graph)
+        self.relation_matcher = RelationshipMatcher(graph=self.graph)
 
     def _create_CompanyNode(self, *, file_path=None, company_name=None, company_code=None, companny_id=None):
         node_list = []
@@ -68,7 +70,7 @@ class Company_KG:
     def construct(self):
         fail_time = 0
         while fail_time < 5:
-            password = input("please enter the Neo4j key: ")
+            password = input("please enter the Neo4j password: ")
             if password != "lkn12345765":
                 fail_time += 1
                 print("====================================")
@@ -91,9 +93,47 @@ class Company_KG:
         self._create_CompanyRelation(node_list=node_list, file_path="./KnowledgeGraph/hidy.relationships.supply.csv")
         
         return self.graph
+    
+    def implicit_mining(self, *, file_path = None):
+        print("Start mining the implicit company")
+        assert file_path is not None, "file_path should not None"
+        if os.path.exists(file_path):
+            news = pd.read_excel(file_path)
+            def get_positive_implicitCompany(value):
+                name_list = [name.strip() for name in value.split(',')]
+                positive_nodes = []
+                for company_name in name_list:
+                    node = self.node_matcher.match("Company", name=company_name).first()
+                    relationships = list(self.relation_matcher.match(nodes=(node, None)))
+                    for relationship in relationships:
+                        if type(relationship).__name__ in ["cooperate", "invest", "same_industry", "supply"]:
+                            positive_nodes.append(relationship.end_node["name"])
+                return positive_nodes
+            
+            def get_negative_implicitCompany(value):
+                name_list = [name.strip() for name in value.split(',')]
+                negative_nodes = []
+                for company_name in name_list:
+                    node = self.node_matcher.match("Company", name=company_name).first()
+                    relationships = list(self.relation_matcher.match(nodes=(node, None)))
+                    for relationship in relationships:
+                        if type(relationship).__name__ in ["compete", "dispute"]:
+                            negative_nodes.append(relationship.end_node["name"])
+                return negative_nodes
+
+            tqdm.pandas()
+            news["Implicit_Negative_Company"] = news["Explicit_Company"].progress_apply(get_negative_implicitCompany)
+            news["Implicit_Positive_Company"] = news["Explicit_Company"].progress_apply(get_positive_implicitCompany)
+        else:
+            raise FileNotFoundError
+
 
 if __name__ == "__main__":
     graph_service = Company_KG()
     graph = graph_service.construct()
     print("✔ Success")
+    print("===============================================")
+    print("Implicit Company Mining")
+    graph_service.implicit_mining(file_path="./Data/Task1.xlsx")
+    print("✔ Finish!")
     print("===============================================")
