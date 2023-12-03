@@ -32,4 +32,6 @@ https://huggingface.co/hw2942/bert-base-chinese-finetuning-financial-news-sentim
 ![image-20231109135613887](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/33703a42-c36c-4bba-97df-9c67f5e146dd)
 
 
+![image](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/a556d51d-a6a6-408b-b75b-89af75117677)
+
 
