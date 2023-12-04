@@ -41,7 +41,9 @@ In the knowledge graph you build,  the  node  type  is  "company,"  and  there  
 
 ![image](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/a556d51d-a6a6-408b-b75b-89af75117677)
 
+
 ### SubTask2: Knowledge-Driven Financial Analysis
 Identify ALL implicit companies corresponding to each company  of Explicit_Company in your own Task1.xlsx file. Categorize them into Implicit Positive Companies and Implicit Negative Companies. 
+
 ![image](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/b3f0ffd7-716b-4aa5-a87f-c60d8cdf3f3c)
 
