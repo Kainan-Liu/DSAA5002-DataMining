@@ -24,14 +24,24 @@ This news explicitly mentions three companies: 贵州茅台(600519.SH), 今世�
 
 **Description**: Building on Question 1, we assume you have obtained a clean dataset where each news mentions at least one A-share listed company. In this question, your objective is to determine the sentiment polarity of each news text. This task can be treated as a binary classification problem, with Class 0 indicating "negative" and Class 1 indicating "positive". You can refer to the submission_excel_sample/sample_Task1.xlsx file for more information
 
-#### Solution
-Use Chinese-Bert based model pretrained on Chinese Financial News
+## Task 2 Application of Knowledge Graph 
 
-https://huggingface.co/hw2942/bert-base-chinese-finetuning-financial-news-sentiment-v2
+Background: In addition to explicitly mentioning listed companies, each news article may also implicitly impact the other companies, either positively or negatively. For instance, on October 14, 2022, the China Securities Journal(中国证券报) reported the following:
 
-![image-20231109135613887](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/33703a42-c36c-4bba-97df-9c67f5e146dd)
+> 2022-10-14 截至10 月13 日，包括贵州茅台、今世缘、水井坊等多家酒企披露了前三季度业绩预告或经营数据公告。从目前已披露的数据来看，前三季度酒企业绩表现稳定。
 
+This news explicitly mentions three companies:  贵州茅台(600519.SH),  今世缘(603369.SH), and 水井坊(600779.SH), and the impact appears to be positive. However, other companies such as  五粮液  (000858.SZ),  洋河股份  (002304.SZ),  泸州老窖 (000568.SZ), and  山西汾酒(600809.SH) might also be positively affected, as they belong to the same industry as  贵州茅台(600519.SH).  Conversely,  this  news  might  have  a  negative  impact  on  贵绳股份(600992.SH)  and  宁德时代(300750.SZ), as  贵绳股份  has a dispute with  贵州茅台, and  宁德时代  competes with  贵州茅台.   
+ 
+In the above analysis, expressions like "belong to the same industry," "have a dispute," and "compete" can be considered as forms of knowledge. The most well-known data structure for representing knowledge is a knowledge graph, where nodes represent entities, and edges represent relationships. Each relationship connects two entities and can be represented using a triple (S, P, O) = (Subject, Predicate, Object). For example, "贵州茅台(600519.SH) and  贵绳股份(603369.SH) have a dispute" can be represented as a triple (600519.SH, "dispute", 603369.SH), and "宁德时代(300750.SZ) competes with 贵州茅台(600519.SH)" can be represented as a triple (300750.SZ, "compete", 600519.SH).   
+ 
+Fortunately, a research team has studied the relationships between A-share listed companies and provided the data in the KnowledgeGraph folder. In the following questions, you are required to use all the data from the KnowledgeGraph folder.
+
+### SubTask1: Constructing a Knowledge Graph 
+In the knowledge graph you build,  the  node  type  is  "company,"  and  there  are  six  types  of  edges:  "compete,"  "cooperate,"  "dispute,"  "invest,"  "same_industry," and "supply." Edges can be directed, meaning from S to P, or undirected (bidirectional)
 
 ![image](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/a556d51d-a6a6-408b-b75b-89af75117677)
 
+### SubTask2: Knowledge-Driven Financial Analysis
+Identify ALL implicit companies corresponding to each company  of Explicit_Company in your own Task1.xlsx file. Categorize them into Implicit Positive Companies and Implicit Negative Companies. 
+![image](https://github.com/Kainan-Liu/DSAA5002-DataMining/assets/146005327/b3f0ffd7-716b-4aa5-a87f-c60d8cdf3f3c)
 
