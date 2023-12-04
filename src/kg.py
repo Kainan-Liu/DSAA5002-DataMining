@@ -2,7 +2,7 @@ from py2neo import Graph, Relationship, Node, Subgraph, NodeMatcher, Relationshi
 from tqdm import tqdm
 import os
 import pandas as pd
-
+import argparse
 
 class Company_KG:
     def __init__(self, uri="bolt://localhost:7687", user = "neo4j", password = "lkn12345765") -> None:
@@ -94,11 +94,11 @@ class Company_KG:
         
         return self.graph
     
-    def implicit_mining(self, *, file_path = None):
+    def implicit_mining(self, *, file_path = None, num_sample):
         print("Start mining the implicit company")
         assert file_path is not None, "file_path should not None"
         if os.path.exists(file_path):
-            news = pd.read_excel(file_path)
+            news = pd.read_excel(file_path).iloc[:num_sample, :]
             def get_positive_implicitCompany(value):
                 name_list = [name.strip() for name in value.split(',')]
                 positive_nodes = []
@@ -108,6 +108,8 @@ class Company_KG:
                     for relationship in relationships:
                         if type(relationship).__name__ in ["cooperate", "invest", "same_industry", "supply"]:
                             positive_nodes.append(relationship.end_node["name"])
+                if positive_nodes == []:
+                    positive_nodes = None
                 return positive_nodes
             
             def get_negative_implicitCompany(value):
@@ -119,21 +121,35 @@ class Company_KG:
                     for relationship in relationships:
                         if type(relationship).__name__ in ["compete", "dispute"]:
                             negative_nodes.append(relationship.end_node["name"])
+                if negative_nodes == []:
+                    negative_nodes = None
                 return negative_nodes
 
             tqdm.pandas()
-            news["Implicit_Negative_Company"] = news["Explicit_Company"].progress_apply(get_negative_implicitCompany)
             news["Implicit_Positive_Company"] = news["Explicit_Company"].progress_apply(get_positive_implicitCompany)
+            news["Implicit_Negative_Company"] = news["Explicit_Company"].progress_apply(get_negative_implicitCompany)
+            news.to_excel("./Data/Task2.xlsx", index=False)
         else:
             raise FileNotFoundError
 
 
-if __name__ == "__main__":
+def main(file_path, num_sample):
+    assert file_path is not None, "file_path should not be None"
     graph_service = Company_KG()
     graph = graph_service.construct()
     print("✔ Success")
     print("===============================================")
     print("Implicit Company Mining")
-    graph_service.implicit_mining(file_path="./Data/Task1.xlsx")
+    graph_service.implicit_mining(file_path=file_path, num_sample=num_sample)
     print("✔ Finish!")
     print("===============================================")
+
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(prog="KG")
+    parser.add_argument("--file_path", default="./Data/Task1.xlsx")
+    parser.add_argument("--num_sample", default=100, type=int)
+    args = parser.parse_args()
+
+    main(file_path=args.file_path, num_sample=args.num_sample)
